@@ -1,0 +1,119 @@
+<html>
+  <head>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+  </head>
+  <style>
+  .slider{
+    display: block;
+    width: 30%
+  }
+  </style>
+  <body>
+    <h1>Aileen Cai ac952 - HW #7</h1>
+
+    <h3>Problem 1:</h3>
+    <p>
+    <canvas id= "colorLAB" height="320" width="320" >
+    </p>
+
+    <p>
+      <label for="Hue" style=" width:80px">
+          Luminosity = <span id="Huevalue"></span>
+      </label>
+      <input type="range" min="0" max="150" step ="1" class="slider" id="Hue">
+    </p>
+
+    <script>
+    // ADD CANVAS
+    let width = 320;
+    let height = 320;
+    let colorCanvas = document.getElementById("colorLAB");
+    let colorContext = colorCanvas.getContext("2d");
+    function Luminosity(l){
+      d3.range(0, width).forEach(function(x) {
+        d3.range(0, height).forEach(function(y) {
+          let a = -100 + 200 * x / width
+          let b =  -100 + 200 * y / height
+          colorContext.fillStyle = d3.lab(l, a, b);
+          colorContext.fillRect(x, y, 1, 1);
+        });
+      });
+    }
+    // ADD SLIDER
+    let slider = d3.select("body")
+          .append("svg")
+          .attr("width", width)
+          .attr("height", height);
+    d3.select("#Hue")
+      .on("input", function() {
+      change(+this.value);
+    });
+    change(0);
+    function change(hue) {
+      d3.select("#Huevalue").text(hue);
+      d3.select("#Hue").property("value", hue);
+      Luminosity(hue);
+    }
+    </script>
+      <!-- https://bl.ocks.org/syntagmatic/97f4c653539f910a2f80c36647768bd3 -->
+
+    <h3>Problem 2:</h3>
+    <svg id="senate" width ="800" height = "400"></svg>
+
+    <script>
+      const svg = d3.select('#senate');
+      const w = svg.attr("width");
+      const h = svg.attr("height");
+      const colorScale = d3.scaleOrdinal().domain(['Dem','Rep','Ind']).range(['blue','red','yellow']);
+      const fdg = svg.append("g");
+
+      const requestData = async() => {
+        const nodes = await d3.csv("senate.109.rollcall.nodes.csv")
+        // console.log('nodes',nodes)
+        const edges = await d3.csv("senate.109.rollcall.edges.csv");
+        // console.log('edges', links)
+
+        // part b
+      var simulate = d3.forceSimulation()
+          .nodes(nodes)
+          .force("edges", d3.forceLink()
+              .links(edges)
+              .id(d => d.icpsr))
+          .force("repulse", d3.forceManyBody().strength(-60))
+          .force("x", d3.forceX(function(d){
+            return d.party === "Dem" ? w*0.25 : "Rep" ? w*0.75 : w*0.5
+          }).strength(0.1))
+          .force("y", d3.forceY(h/2).strength(0.1))
+          .on("tick", render);
+
+          function render() {
+            let edge = fdg.selectAll("line.link").data(edges)
+            edge.enter().append("line")
+                 .attr("class","link")
+                 .attr("stroke","black")
+                 .merge(edge)
+                 .attr("opacity", 1)
+                 .attr("x1", function(d){return d.source.x})
+                 .attr("x2", function(d){return d.target.x})
+                 .attr("y1", function(d){return d.source.y})
+                 .attr("y2", function(d){return d.target.y});
+
+
+            let circles = fdg.selectAll("circle.node").data(nodes);
+            circles.enter().append("circle")
+                   .attr("class","node")
+                   .attr("fill", function(d){return colorScale(d.party)})
+                   .attr("stroke", "white")
+                   .attr("cx", 0)
+                   .attr("cy", 0)
+                   .attr("r", 5)
+                   .merge(circles)
+                   .attr("transform", function(d){return "translate("+d.x+","+d.y+")"});
+          }
+          render();
+      }
+      requestData();
+    </script>
+
+  </body>
+</html>
